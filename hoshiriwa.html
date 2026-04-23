@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ホシリワ</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="restoreLoading">
+  <div class="spinner"></div>
+  <span class="spinner-text">読み込み中...</span>
+</div>
+
+<header>
+  <button class="menu-btn" onclick="toggleDrawer()">☰</button>
+  📦 ホシリワ
+  <div class="header-balance" id="headerBalance">0 しむ</div>
+</header>
+
+<div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-title">📦 ホシリワ</div>
+  <a class="drawer-item" href="index.html">🏦 しむPayに戻る</a>
+  <a class="drawer-item" href="ranking.html">🏆 ランキング</a>
+  <a class="drawer-item" href="https://forms.gle/3knWjZZchVdiuYZH6" target="_blank">🚨 通報フォーム</a>
+  <a class="drawer-item" onclick="closeDrawer(); logout();">🚪 ログアウト</a>
+</div>
+
+<!-- ===== ログイン画面 ===== -->
+<div class="container" id="loginScreen">
+  <div class="auth-tabs">
+    <div class="auth-tab-indicator" id="tabIndicator"></div>
+    <button class="auth-tab-btn active" id="tabLoginBtn" onclick="switchTab('login')">ログイン</button>
+    <button class="auth-tab-btn" id="tabRegisterBtn" onclick="switchTab('register')">アカウント作成</button>
+  </div>
+  <div class="auth-forms-wrapper" id="authFormsWrapper">
+    <div class="auth-form-panel">
+      <input type="text" id="loginName" placeholder="名前">
+      <input type="password" id="loginPass" placeholder="4桁パスワード">
+      <br>
+      <button onclick="login()">ログイン</button>
+    </div>
+    <div class="auth-form-panel hidden-panel">
+      <input type="text" id="regName" placeholder="名前">
+      <input type="password" id="regPass" placeholder="4桁パスワード">
+      <input type="password" id="regPassConfirm" placeholder="パスワード確認">
+      <br>
+      <button onclick="createAccount()">アカウント作成</button>
+    </div>
+  </div>
+  <p id="loading">処理中...</p>
+  <p id="message" class="msg text-danger"></p>
+</div>
+
+<!-- ===== メイン画面 ===== -->
+<div class="container" id="mainScreen">
+
+  <!-- 残高カード -->
+  <div class="balance-card">
+    <div class="user-name" id="userName">👤 ユーザー</div>
+    <div class="balance-label">残高</div>
+    <div>
+      <span class="balance-amount" id="balanceDisp">0</span>
+      <span class="balance-unit"> しむ</span>
+    </div>
+  </div>
+
+  <!-- 依頼投稿フォーム -->
+  <div class="action-card">
+    <h3>📝 依頼を投稿する</h3>
+    <div class="notice">受注された時点で報酬が自動で相手に支払われます</div>
+    <input type="text" id="postTitle" placeholder="依頼タイトル（必須）">
+    <textarea id="postDesc" placeholder="依頼の詳細（必須）" rows="3"></textarea>
+    <input type="text" id="postProductTag" placeholder="商品ジャンル（例：食品、ガジェット）">
+    <input type="text" id="postRequestTag" placeholder="依頼ジャンル（例：写真、動画）">
+    <div class="form-row">
+      <input type="number" id="postReward" placeholder="報酬" min="1" max="100" class="reward-input">
+      <span class="reward-caption">しむ（1〜100）</span>
+    </div>
+    <button onclick="submitPost()">依頼を投稿する</button>
+    <p id="postMsg" class="msg text-danger"></p>
+  </div>
+
+  <!-- 依頼一覧 -->
+  <div class="action-card">
+    <h3>📋 依頼一覧</h3>
+    <input type="text" id="searchInput" placeholder="🔍 検索..." oninput="filterPosts()" class="search-input">
+    <div id="postList"><p class="empty-state">読み込み中...</p></div>
+  </div>
+
+  <button class="btn-gray" onclick="location.href='index.html'">🏦 しむPayに戻る</button>
+  <button class="btn-outline" onclick="logout()">🚪 ログアウト</button>
+
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, get, set, push, update, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+  import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAeZ6-QBxkvWLeHG-N20pjxvIHe05OK6Oc",
+    authDomain: "simu-bank.firebaseapp.com",
+    databaseURL: "https://simu-bank-default-rtdb.firebaseio.com",
+    projectId: "simu-bank",
+    storageBucket: "simu-bank.firebasestorage.app",
+    messagingSenderId: "88269096434",
+    appId: "1:88269096434:web:c030c1e599c9dc92af576b"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  const auth = getAuth(app);
+
+  let currentUser = null;
+  let currentUserName = null;
+  let allPosts = [];
+
+  const NG_WORDS = ['spam','ばか','死ね','アダルト','まんこ','ちんこ','殺す','ころす'];
+  function hasNG(t) { return NG_WORDS.some(w => (t||'').toLowerCase().includes(w)); }
+  function esc(s) {
+    return String(s||'').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+
+  function showLoading(show) { document.getElementById('loading').style.display = show ? 'block' : 'none'; }
+
+  // ===== タブ切り替え =====
+  window.switchTab = function(tab) {
+    const isLogin = tab === 'login';
+    const panels = document.querySelectorAll('.auth-form-panel');
+    panels[0].classList.toggle('hidden-panel', !isLogin);
+    panels[1].classList.toggle('hidden-panel', isLogin);
+    document.getElementById('tabIndicator').classList.toggle('register', !isLogin);
+    document.getElementById('tabLoginBtn').classList.toggle('active', isLogin);
+    document.getElementById('tabRegisterBtn').classList.toggle('active', !isLogin);
+    document.getElementById('message').textContent = '';
+  };
+
+  // ===== アカウント作成 =====
+  window.createAccount = async function() {
+    const name = document.getElementById('regName').value.trim();
+    const pass = document.getElementById('regPass').value.trim();
+    const passConfirm = document.getElementById('regPassConfirm').value.trim();
+    const msg = document.getElementById('message');
+    msg.style.color = 'red';
+
+    const ngWords = ['まんこ','ちんこ','おまんこ','死ね','しね','殺す','ころす','クズ','バカ','アホ','うんこ','ちんぽ'];
+    if (!name) { msg.textContent = '名前を入力してください'; return; }
+    if (ngWords.some(w => name.includes(w))) { msg.textContent = 'その名前は使用できません'; return; }
+    if (!pass || pass.length !== 4 || !/^\d{4}$/.test(pass)) { msg.textContent = 'パスワードは数字4桁にしてください'; return; }
+    if (['4545','0721'].includes(pass)) { msg.textContent = 'そのパスワードは使用できません'; return; }
+    if (pass !== passConfirm) { msg.textContent = 'パスワードが一致しません'; return; }
+
+    showLoading(true);
+    try {
+      await signInAnonymously(auth);
+      const snap = await get(ref(db, 'accounts/' + name));
+      if (snap.exists()) { msg.textContent = 'その名前はすでに使われています'; return; }
+      const allSnap = await get(ref(db, 'accounts'));
+      if (allSnap.exists() && Object.keys(allSnap.val()).length >= 50) { msg.textContent = 'アカウント上限に達しました'; return; }
+      await set(ref(db, 'accounts/' + name), { pass, balance: 0, history: [], lastBonus: 0, createdAt: Date.now() });
+      msg.style.color = 'green';
+      msg.textContent = 'アカウント作成成功！ログインしてください';
+      document.getElementById('regName').value = '';
+      document.getElementById('regPass').value = '';
+      document.getElementById('regPassConfirm').value = '';
+      setTimeout(() => switchTab('login'), 1200);
+    } catch(e) { msg.textContent = 'エラーが発生しました'; }
+    finally { showLoading(false); }
+  };
+
+  // ===== ログイン =====
+  window.login = async function() {
+    const name = document.getElementById('loginName').value.trim();
+    const pass = document.getElementById('loginPass').value.trim();
+    const msg = document.getElementById('message');
+    msg.style.color = 'red';
+    if (!name || !pass) { msg.textContent = '名前とパスワードを入力してください'; return; }
+    showLoading(true);
+    try {
+      await signInAnonymously(auth);
+      const snap = await get(ref(db, 'accounts/' + name));
+      if (!snap.exists() || snap.val().pass !== pass) { msg.textContent = '名前またはパスワードが違います'; return; }
+      currentUser = snap.val(); currentUserName = name;
+      localStorage.setItem('shimupay_user', name);
+      showMain();
+    } catch(e) { msg.textContent = '接続エラーが発生しました'; }
+    finally { showLoading(false); }
+  };
+
+  function showMain() {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('mainScreen').style.display = 'block';
+    document.getElementById('headerBalance').style.display = 'block';
+    document.getElementById('headerBalance').textContent = currentUser.balance + ' しむ';
+    updateUI();
+    loadPosts();
+  }
+
+  function updateUI() {
+    document.getElementById('userName').textContent = '👤 ' + currentUserName;
+    document.getElementById('balanceDisp').textContent = currentUser.balance;
+    document.getElementById('headerBalance').textContent = currentUser.balance + ' しむ';
+  }
+
+  // ===== 投稿 =====
+  window.submitPost = async function() {
+    const title = document.getElementById('postTitle').value.trim();
+    const desc = document.getElementById('postDesc').value.trim();
+    const productTag = document.getElementById('postProductTag').value.trim();
+    const requestTag = document.getElementById('postRequestTag').value.trim();
+    const reward = Number(document.getElementById('postReward').value);
+    const msg = document.getElementById('postMsg');
+    msg.style.color = 'red';
+
+    if (!title || !desc) { msg.textContent = 'タイトルと説明は必須です'; return; }
+    if (desc.length > 500) { msg.textContent = '説明は500文字以内にしてください'; return; }
+    if (hasNG(title) || hasNG(desc)) { msg.textContent = 'NGワードが含まれています'; return; }
+    if (!reward || reward < 1 || reward > 100) { msg.textContent = '報酬は1〜100しむで設定してください'; return; }
+    if (currentUser.balance < reward) { msg.textContent = `残高が不足しています（現在: ${currentUser.balance} しむ）`; return; }
+
+    try {
+      // 報酬をエスクロー
+      const newBalance = currentUser.balance - reward;
+      const newHistory = [...(currentUser.history||[]), `📝 依頼「${title}」報酬 -${reward} しむ`].slice(-10);
+      await update(ref(db, 'accounts/' + currentUserName), { balance: newBalance, history: newHistory });
+      currentUser.balance = newBalance; currentUser.history = newHistory;
+      updateUI();
+
+      const postRef = push(ref(db, 'hoshiriwa_posts'));
+      await set(postRef, {
+        id: postRef.key, name: title, desc,
+        product_tag: productTag, request_tag: requestTag,
+        reward, poster: currentUserName,
+        status: 'open', created_at: Date.now()
+      });
+
+      msg.style.color = 'green'; msg.textContent = '依頼を投稿しました！';
+      document.getElementById('postTitle').value = '';
+      document.getElementById('postDesc').value = '';
+      document.getElementById('postProductTag').value = '';
+      document.getElementById('postRequestTag').value = '';
+      document.getElementById('postReward').value = '';
+    } catch(e) { msg.textContent = '投稿に失敗しました'; }
+  };
+
+  // ===== 一覧 =====
+  function loadPosts() {
+    onValue(ref(db, 'hoshiriwa_posts'), snap => {
+      allPosts = snap.exists()
+        ? Object.values(snap.val()).sort((a, b) => b.created_at - a.created_at)
+        : [];
+      filterPosts();
+    });
+  }
+
+  window.filterPosts = function() {
+    const q = document.getElementById('searchInput').value.toLowerCase();
+    const filtered = q ? allPosts.filter(p =>
+      (p.name||'').toLowerCase().includes(q) ||
+      (p.desc||'').toLowerCase().includes(q) ||
+      (p.product_tag||'').toLowerCase().includes(q) ||
+      (p.request_tag||'').toLowerCase().includes(q)
+    ) : allPosts;
+    renderPosts(filtered);
+  };
+
+  function renderPosts(posts) {
+    const div = document.getElementById('postList');
+    if (posts.length === 0) { div.innerHTML = '<p class="empty-state">依頼がありません</p>'; return; }
+    div.innerHTML = posts.map(p => {
+      const isDone = p.status === 'done';
+      const isOwn = p.poster === currentUserName;
+      const date = new Date(p.created_at).toLocaleDateString('ja-JP');
+      return `
+        <div class="post-item">
+          <div class="post-item-header">
+            <span class="status-badge ${isDone ? 'status-done' : 'status-open'}">${isDone ? '受注済' : '募集中'}</span>
+            <span class="reward-badge">💰 ${p.reward} しむ</span>
+          </div>
+          <div class="post-title">${esc(p.name)}</div>
+          <div class="post-desc">${esc(p.desc)}</div>
+          <div class="post-tags">
+            ${p.product_tag ? `<span class="tag product">#${esc(p.product_tag)}</span>` : ''}
+            ${p.request_tag ? `<span class="tag request">#${esc(p.request_tag)}</span>` : ''}
+          </div>
+          <div class="post-meta">投稿者: ${esc(p.poster)} ・ ${date}${isDone ? ` ・ 受注者: ${esc(p.acceptor||'')}` : ''}</div>
+          <div class="post-actions">
+            ${!isOwn && !isDone ? `<button class="btn-accept" onclick="acceptPost('${p.id}')">✅ 受注する（+${p.reward} しむ）</button>` : ''}
+            ${isOwn && !isDone ? `<span class="btn-gray-sm center-text">自分の依頼</span>` : ''}
+            ${isDone ? `<span class="btn-gray-sm center-text">受注済み</span>` : ''}
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  // ===== 受注 =====
+  window.acceptPost = async function(postId) {
+    const post = allPosts.find(p => p.id === postId);
+    if (!post || post.status === 'done') return;
+    if (!confirm(`「${post.name}」を受注しますか？\n報酬: ${post.reward} しむ が受け取れます`)) return;
+
+    try {
+      const newBalance = currentUser.balance + post.reward;
+      const newHistory = [...(currentUser.history||[]), `✅ 依頼受注「${post.name}」+${post.reward} しむ`].slice(-10);
+      const updates = {};
+      updates[`accounts/${currentUserName}/balance`] = newBalance;
+      updates[`accounts/${currentUserName}/history`] = newHistory;
+      updates[`hoshiriwa_posts/${postId}/status`] = 'done';
+      updates[`hoshiriwa_posts/${postId}/acceptor`] = currentUserName;
+      updates[`hoshiriwa_posts/${postId}/accepted_at`] = Date.now();
+      await update(ref(db), updates);
+      currentUser.balance = newBalance; currentUser.history = newHistory;
+      updateUI();
+      alert(`受注しました！${post.reward} しむ を受け取りました🎉`);
+    } catch(e) { alert('受注に失敗しました'); }
+  };
+
+  // ===== ログアウト =====
+  window.logout = function() {
+    currentUser = null; currentUserName = null;
+    localStorage.removeItem('shimupay_user');
+    document.getElementById('mainScreen').style.display = 'none';
+    document.getElementById('loginScreen').style.display = 'block';
+    document.getElementById('headerBalance').style.display = 'none';
+  };
+
+  // ===== セッション復元 =====
+  async function restore() {
+    try {
+      await signInAnonymously(auth);
+      const saved = localStorage.getItem('shimupay_user');
+      if (saved) {
+        const snap = await get(ref(db, 'accounts/' + saved));
+        if (snap.exists()) {
+          currentUser = snap.val(); currentUserName = saved;
+          showMain(); return;
+        } else { localStorage.removeItem('shimupay_user'); }
+      }
+      document.getElementById('loginScreen').style.display = 'block';
+    } catch(e) {
+      document.getElementById('loginScreen').style.display = 'block';
+    } finally {
+      document.getElementById('restoreLoading').style.display = 'none';
+    }
+  }
+  restore();
+</script>
+
+<script>
+  function toggleDrawer() {
+    document.getElementById('drawer').classList.toggle('open');
+    document.getElementById('drawerOverlay').classList.toggle('open');
+  }
+  function closeDrawer() {
+    document.getElementById('drawer').classList.remove('open');
+    document.getElementById('drawerOverlay').classList.remove('open');
+  }
+</script>
+
+</body>
+</html>
