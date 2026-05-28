@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NKD Pay - ランキング</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#4caf50">
+<link rel="stylesheet" href="style.css">
+<style>
+  .podium-wrap {
+    display: flex; align-items: flex-end; justify-content: center;
+    gap: 12px; margin: 10px 0 20px; padding: 12px 0 4px;
+  }
+  .podium-card {
+    flex: 1; max-width: 96px; position: relative;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+  }
+  .podium-crown { font-size: 1.35em; line-height: 1; }
+  .podium-rank { font-size: 0.85em; font-weight: bold; color: #666; }
+  .podium-name { font-weight: bold; color: #333; line-height: 1.35; word-break: break-word; text-align: center; font-size: 0.92em; }
+  .podium-balance { font-size: 0.82em; color: #666; }
+  .podium-vip {
+  font-size: 0.65em;
+  font-weight: bold;
+
+  background: #111;
+
+  color: #ffd700;
+
+  border: 1px solid #b8952a;
+  border-radius: 5px;
+
+  padding: 2px 6px;
+
+  display: inline-block;
+}
+  .podium-step { width: 100%; border-radius: 14px 14px 0 0; box-shadow: inset 0 1px 0 rgba(255,255,255,0.5); }
+  .podium-1 .podium-step { height: 118px; background: linear-gradient(180deg,#ffe082,#ffca28); }
+  .podium-2 .podium-step { height: 92px; background: linear-gradient(180deg,#eceff1,#b0bec5); }
+  .podium-3 .podium-step { height: 74px; background: linear-gradient(180deg,#d7a36d,#b87333); }
+  .podium-1 .podium-rank, .podium-1 .podium-name { color: #000000; }
+  .podium-2 .podium-rank, .podium-2 .podium-name { color: #000000; }
+  .podium-3 .podium-rank, .podium-3 .podium-name { color: #000000; }
+  .rank-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 14px; margin-bottom: 8px;
+    background: #f8faf8; border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  }
+  .rank-num { min-width: 48px; font-weight: bold; color: #4caf50; }
+  .rank-name { flex: 1; text-align: left; color: #333; font-weight: bold; word-break: break-word; display: flex; align-items: center; gap: 6px; }
+  .rank-vip { font-size: 0.65em; font-weight: bold; background: linear-gradient(135deg,#b8952a,#ffd700,#b8952a); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; border:1px solid #b8952a; border-radius:3px; padding:1px 4px; }
+  .rank-balance { color: #666; font-size: 0.9em; white-space: nowrap; }
+  .back-link { display: block; text-align: center; margin-top: 16px; color: #4caf50; text-decoration: none; font-weight: bold; }
+  .back-link:hover { text-decoration: underline; }
+  @media(max-width:480px) {
+    .podium-wrap { gap: 8px; }
+    .podium-card { max-width: none; }
+    .podium-name { font-size: 0.88em; }
+  }
+</style>
+</head>
+<body>
+<header>NKD Pay</header>
+<div class="container">
+  <h2 style="text-align:center;margin:0 0 16px;color:#333;">ランキング</h2>
+  <div id="rankingPodium"></div>
+  <div id="rankingList"><p style="text-align:center;color:#888;">読み込み中...</p></div>
+  <a href="index.html" class="back-link">← ホームに戻る</a>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+const firebaseConfig = {
+  apiKey: "AIzaSyAeZ6-QBxkvWLeHG-N20pjxvIHe05OK6Oc",
+  authDomain: "simu-bank.firebaseapp.com",
+  databaseURL: "https://simu-bank-default-rtdb.firebaseio.com",
+  projectId: "simu-bank",
+  storageBucket: "simu-bank.firebasestorage.app",
+  messagingSenderId: "88269096434",
+  appId: "1:88269096434:web:c030c1e599c9dc92af576b"
+};
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const snap = await get(ref(db,"accounts"));
+const podium = document.getElementById("rankingPodium");
+const list = document.getElementById("rankingList");
+if(!snap.exists()) {
+  podium.innerHTML=""; list.innerHTML='<p style="text-align:center;color:#888;">ユーザーがいません</p>';
+} else {
+  const accounts = snap.val();
+  const sorted = Object.entries(accounts).sort((a,b)=>(b[1].balance||0)-(a[1].balance||0));
+  const top3 = sorted.slice(0,3);
+  const podiumOrder = [1,0,2].map(i=>top3[i]).filter(Boolean);
+  podium.innerHTML = top3.length ? `
+    <div class="podium-wrap">
+      ${podiumOrder.map(([name,data])=>{
+        const rank = sorted.findIndex(([n])=>n===name)+1;
+        const crown = rank===1?'<div class="podium-crown">👑</div>':'';
+        const isAdmin = data.role === "admin";
+        const isVip =
+        data.premiumType === "1month" ||
+        data.premiumType === "3month" ||
+        data.premiumType === "12month";
+        
+        let badges = [];
+        
+        if (isVip) {
+          badges.push('<span class="podium-vip">💎VIP</span>');
+        }
+        
+        if (isAdmin) {
+          badges.push('<span class="admin-badge">運営</span>');
+        }
+
+const badge = badges.join(" ");
+        return `<div class="podium-card podium-${rank}">
+          ${crown}
+          <div class="podium-rank">${rank}位</div>
+          
+          <div class="podium-name">${name}</div>
+          <div class="podium-badges">${badge}</div>
+
+  <div class="podium-balance">${data.balance||0} NKD</div>
+  <div class="podium-step"></div>
+</div>`;
+      }).join('')}
+    </div>` : '';
+  const others = sorted.slice(3);
+  list.innerHTML = others.length ? others.map(([name,data],i)=>`
+    <div class="rank-item">
+      <span class="rank-num">${i+4}位</span>
+      <span class="rank-name">${name}${data.isPremium?'<span class="rank-vip">VIP</span>':''}</span>
+      <span class="rank-balance">${data.balance||0} NKD</span>
+    </div>`).join('') : '<p style="text-align:center;color:#888;margin-top:8px;">4位以下のユーザーはいません</p>';
+}
+
+</script>
+</body>
+</html>
