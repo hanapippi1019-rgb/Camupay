@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NKD Pay - ランキング</title>
+<title>かむ Pay - ランキング</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#4caf50">
 <link rel="stylesheet" href="style.css">
@@ -11,6 +11,16 @@
   .podium-wrap {
     display: flex; align-items: flex-end; justify-content: center;
     gap: 12px; margin: 10px 0 20px; padding: 12px 0 4px;
+  }
+    .rank-vip {
+    font-size: 0.65em;
+    font-weight: bold;
+    background: #111;
+    color: #ffd700;
+    border: 1px solid #b8952a;
+    border-radius: 5px;
+    padding: 2px 6px;
+    display: inline-block;
   }
   .podium-card {
     flex: 1; max-width: 96px; position: relative;
@@ -62,7 +72,7 @@
 </style>
 </head>
 <body>
-<header>NKD Pay</header>
+<header>かむ Pay</header>
 <div class="container">
   <h2 style="text-align:center;margin:0 0 16px;color:#333;">ランキング</h2>
   <div id="rankingPodium"></div>
@@ -99,16 +109,24 @@ if(!snap.exists()) {
       ${podiumOrder.map(([name,data])=>{
         const rank = sorted.findIndex(([n])=>n===name)+1;
         const crown = rank===1?'<div class="podium-crown">👑</div>':'';
-        const isAdmin = data.role === "admin";
+        console.log(name, data);
+
+        const isAdmin =
+          data.role === "admin" ||
+          data.isAdmin === true ||
+          data.admin === true;
+
         const isVip =
-        data.premiumType === "1month" ||
-        data.premiumType === "3month" ||
-        data.premiumType === "12month";
+          data.isPremium === true ||
+          data.vip === true ||
+          data.premiumType === "1month" ||
+          data.premiumType === "3month" ||
+          data.premiumType === "12month";
         
         let badges = [];
         
         if (isVip) {
-          badges.push('<span class="podium-vip">💎VIP</span>');
+          badges.push('<span class="podium-vip">VIP</span>');
         }
         
         if (isAdmin) {
@@ -123,18 +141,50 @@ const badge = badges.join(" ");
           <div class="podium-name">${name}</div>
           <div class="podium-badges">${badge}</div>
 
-  <div class="podium-balance">${data.balance||0} NKD</div>
+  <div class="podium-balance">${data.balance||0} かむ</div>
   <div class="podium-step"></div>
 </div>`;
       }).join('')}
     </div>` : '';
   const others = sorted.slice(3);
-  list.innerHTML = others.length ? others.map(([name,data],i)=>`
+  list.innerHTML = others.length ? others.map(([name,data],i)=>{
+    console.log(name, data);
+
+    const isAdmin =
+    data.role === "admin" ||
+    data.isAdmin === true ||
+    data.admin === true;
+
+    const isVip =
+      data.isPremium === true ||
+      data.vip === true ||
+      data.premiumType === "1month" ||
+      data.premiumType === "3month" ||
+      data.premiumType === "12month";
+
+    let badges = [];
+
+    if (isVip) {
+      badges.push('<span class="podium-vip">VIP</span>');
+    }
+
+    if (isAdmin) {
+      badges.push('<span class="admin-badge">運営</span>');
+    }
+
+    const badge = badges.join(" ");
+
+    return `
     <div class="rank-item">
       <span class="rank-num">${i+4}位</span>
-      <span class="rank-name">${name}${data.isPremium?'<span class="rank-vip">VIP</span>':''}</span>
-      <span class="rank-balance">${data.balance||0} NKD</span>
-    </div>`).join('') : '<p style="text-align:center;color:#888;margin-top:8px;">4位以下のユーザーはいません</p>';
+      <span class="rank-name">
+        ${name}
+        ${badge}
+      </span>
+      <span class="rank-balance">${data.balance||0} かむ</span>
+    </div>`;
+  }).join('') : '<p style="text-align:center;color:#888;margin-top:8px;">4位以下のユーザーはいません</p>';
+
 }
 
 </script>
