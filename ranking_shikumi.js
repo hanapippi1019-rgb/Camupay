@@ -67,7 +67,7 @@ const adminBadge = isAdmin
       ${vipBadge}
     </div>
 
-    <div class="podium-balance">${data.balance || 0} NKD</div>
+    <div class="podium-balance">${data.balance || 0} かむ</div>
     <div class="podium-bar"></div>
   </div>`;
   });
@@ -94,7 +94,7 @@ sorted.slice(3).forEach(([name, data], i) => {
     <div class="rank-item">
       <span class="rank-num">${i + 4}位</span>
       <span class="rank-name">${name}${adminBadge}${vipBadge}</span>
-      <span class="rank-balance">${data.balance || 0} NKD</span>
+      <span class="rank-balance">${data.balance || 0} かむ</span>
     </div>`;
 });
 
