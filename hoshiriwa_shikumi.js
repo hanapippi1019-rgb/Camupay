@@ -48,7 +48,7 @@ function showMain() {
   $("loginScreen").style.display = "none";
   $("mainScreen").style.display = "block";
   $("headerBalance").style.display = "block";
-  $("headerBalance").textContent = `${currentUser.balance} NKD`;
+  $("headerBalance").textContent = `${currentUser.balance} かむ`;
   updateUI();
   loadPosts();
 }
@@ -56,7 +56,7 @@ function showMain() {
 function updateUI() {
   $("userName").textContent = `👤 ${currentUserName}`;
   $("balanceDisp").textContent = currentUser.balance;
-  $("headerBalance").textContent = `${currentUser.balance} NKD`;
+  $("headerBalance").textContent = `${currentUser.balance} かむ`;
 }
 
 function loadPosts() {
@@ -83,7 +83,7 @@ function renderPosts(posts) {
       <div class="post-item">
         <div class="post-item-header">
           <span class="status-badge ${isDone ? "status-done" : "status-open"}">${isDone ? "受注済" : "募集中"}</span>
-          <span class="reward-badge">💰 ${post.reward} NKD</span>
+          <span class="reward-badge">💰 ${post.reward} かむ</span>
         </div>
         <div class="post-title">${esc(post.name)}</div>
         <div class="post-desc">${esc(post.desc)}</div>
@@ -93,7 +93,7 @@ function renderPosts(posts) {
         </div>
         <div class="post-meta">投稿者: ${esc(post.poster)} ・ ${date}${isDone ? ` ・ 受注者: ${esc(post.acceptor || "")}` : ""}</div>
         <div class="post-actions">
-          ${!isOwn && !isDone ? `<button class="btn-accept" onclick="acceptPost('${post.id}')">✅ 受注する（+${post.reward} NKD）</button>` : ""}
+          ${!isOwn && !isDone ? `<button class="btn-accept" onclick="acceptPost('${post.id}')">✅ 受注する（+${post.reward} かむ）</button>` : ""}
           ${isOwn && !isDone ? '<span class="btn-gray-sm" style="text-align:center;">自分の依頼</span>' : ""}
           ${isDone ? '<span class="btn-gray-sm" style="text-align:center;">受注済み</span>' : ""}
         </div>
@@ -187,12 +187,12 @@ window.submitPost = async function() {
   if (!title || !desc) { msg.textContent = "タイトルと説明は必須です"; return; }
   if (desc.length > 500) { msg.textContent = "説明は500文字以内にしてください"; return; }
   if (hasNG(title) || hasNG(desc)) { msg.textContent = "NGワードが含まれています"; return; }
-  if (!reward || reward < 1 || reward > 100) { msg.textContent = "報酬は1〜100NKDで設定してください"; return; }
-  if (currentUser.balance < reward) { msg.textContent = `残高が不足しています（現在: ${currentUser.balance} NKD）`; return; }
+  if (!reward || reward < 1 || reward > 100) { msg.textContent = "報酬は1〜100かむで設定してください"; return; }
+  if (currentUser.balance < reward) { msg.textContent = `残高が不足しています（現在: ${currentUser.balance} かむ）`; return; }
 
   try {
     const newBalance = currentUser.balance - reward;
-    const newHistory = [...(currentUser.history || []), `📝 依頼「${title}」報酬 -${reward} NKD`].slice(-10);
+    const newHistory = [...(currentUser.history || []), `📝 依頼「${title}」報酬 -${reward} かむ`].slice(-10);
     await update(ref(db, `accounts/${currentUserName}`), { balance: newBalance, history: newHistory });
     currentUser.balance = newBalance;
     currentUser.history = newHistory;
@@ -237,11 +237,11 @@ window.filterPosts = function() {
 window.acceptPost = async function(postId) {
   const post = allPosts.find((item) => item.id === postId);
   if (!post || post.status === "done") return;
-  if (!confirm(`「${post.name}」を受注しますか？\n報酬: ${post.reward} NKD が受け取れます`)) return;
+  if (!confirm(`「${post.name}」を受注しますか？\n報酬: ${post.reward} かむ が受け取れます`)) return;
 
   try {
     const newBalance = currentUser.balance + post.reward;
-    const newHistory = [...(currentUser.history || []), `✅ 依頼受注「${post.name}」+${post.reward} NKD`].slice(-10);
+    const newHistory = [...(currentUser.history || []), `✅ 依頼受注「${post.name}」+${post.reward} かむ`].slice(-10);
     const updates = {};
     updates[`accounts/${currentUserName}/balance`] = newBalance;
     updates[`accounts/${currentUserName}/history`] = newHistory;
@@ -252,7 +252,7 @@ window.acceptPost = async function(postId) {
     currentUser.balance = newBalance;
     currentUser.history = newHistory;
     updateUI();
-    alert(`受注しました！${post.reward} NKD を受け取りました🎉`);
+    alert(`受注しました！${post.reward} かむ を受け取りました🎉`);
   } catch {
     alert("受注に失敗しました");
   }
