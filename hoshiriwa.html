@@ -271,13 +271,13 @@
 <header>
   <button class="menu-btn" onclick="toggleDrawer()">☰</button>
   📦 ホシリワ
-  <div class="header-balance" id="headerBalance">0 NKD</div>
+  <div class="header-balance" id="headerBalance">0 かむ</div>
 </header>
 
 <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
 <div class="drawer" id="drawer">
   <div class="drawer-title">📦 ホシリワ</div>
-  <a class="drawer-item" href="index.html">🏦 NKD Payに戻る</a>
+  <a class="drawer-item" href="index.html">🏦 かむ Payに戻る</a>
   <a class="drawer-item" href="ranking.html">🏆 ランキング</a>
   <a class="drawer-item" href="https://forms.gle/3knWjZZchVdiuYZH6" target="_blank">🚨 通報フォーム</a>
   <a class="drawer-item" onclick="closeDrawer(); logout();">🚪 ログアウト</a>
@@ -318,7 +318,7 @@
     <div style="font-size:0.8em;opacity:0.7;margin-bottom:2px;">残高</div>
     <div>
       <span class="balance-amount" id="balanceDisp">0</span>
-      <span class="balance-unit"> NKD</span>
+      <span class="balance-unit"> かむ</span>
     </div>
   </div>
 
@@ -331,7 +331,7 @@
     <input type="text" id="postRequestTag" placeholder="依頼ジャンル（例：写真、動画）">
     <div style="display:flex;align-items:center;gap:8px;margin:7px 0;">
       <input type="number" id="postReward" placeholder="報酬" min="1" max="100" style="width:auto;flex:1;text-align:center;">
-      <span style="color:#4caf50;font-weight:bold;white-space:nowrap;">NKD（1〜100）</span>
+      <span style="color:#4caf50;font-weight:bold;white-space:nowrap;">かむ（1〜100）</span>
     </div>
     <button onclick="submitPost()">依頼を投稿する</button>
     <p id="postMsg" class="msg" style="color:red;"></p>
@@ -344,7 +344,7 @@
     <div id="postList"><p style="color:#aaa;font-size:0.85em;">読み込み中...</p></div>
   </div>
 
-  <button class="btn-gray" onclick="location.href='index.html'">🏦 NKD Payに戻る</button>
+  <button class="btn-gray" onclick="location.href='index.html'">🏦 かむ Payに戻る</button>
   <button class="btn-outline" onclick="logout()">🚪 ログアウト</button>
 
 </div>
@@ -448,7 +448,7 @@
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('mainScreen').style.display = 'block';
     document.getElementById('headerBalance').style.display = 'block';
-    document.getElementById('headerBalance').textContent = currentUser.balance + ' NKD';
+    document.getElementById('headerBalance').textContent = currentUser.balance + ' かむ';
     updateUI();
     loadPosts();
   }
@@ -456,7 +456,7 @@
   function updateUI() {
     document.getElementById('userName').textContent = '👤 ' + currentUserName;
     document.getElementById('balanceDisp').textContent = currentUser.balance;
-    document.getElementById('headerBalance').textContent = currentUser.balance + ' NKD';
+    document.getElementById('headerBalance').textContent = currentUser.balance + ' かむ';
   }
 
   // ===== 投稿 =====
@@ -472,13 +472,13 @@
     if (!title || !desc) { msg.textContent = 'タイトルと説明は必須です'; return; }
     if (desc.length > 500) { msg.textContent = '説明は500文字以内にしてください'; return; }
     if (hasNG(title) || hasNG(desc)) { msg.textContent = 'NGワードが含まれています'; return; }
-    if (!reward || reward < 1 || reward > 100) { msg.textContent = '報酬は1〜100NKDで設定してください'; return; }
-    if (currentUser.balance < reward) { msg.textContent = `残高が不足しています（現在: ${currentUser.balance} NKD）`; return; }
+    if (!reward || reward < 1 || reward > 100) { msg.textContent = '報酬は1〜100かむで設定してください'; return; }
+    if (currentUser.balance < reward) { msg.textContent = `残高が不足しています（現在: ${currentUser.balance} かむ）`; return; }
 
     try {
       // 報酬をエスクロー
       const newBalance = currentUser.balance - reward;
-      const newHistory = [...(currentUser.history||[]), `📝 依頼「${title}」報酬 -${reward} NKD`].slice(-10);
+      const newHistory = [...(currentUser.history||[]), `📝 依頼「${title}」報酬 -${reward} かむ`].slice(-10);
       await update(ref(db, 'accounts/' + currentUserName), { balance: newBalance, history: newHistory });
       currentUser.balance = newBalance; currentUser.history = newHistory;
       updateUI();
@@ -532,7 +532,7 @@
         <div class="post-item">
           <div class="post-item-header">
             <span class="status-badge ${isDone ? 'status-done' : 'status-open'}">${isDone ? '受注済' : '募集中'}</span>
-            <span class="reward-badge">💰 ${p.reward} NKD</span>
+            <span class="reward-badge">💰 ${p.reward} かむ</span>
           </div>
           <div class="post-title">${esc(p.name)}</div>
           <div class="post-desc">${esc(p.desc)}</div>
@@ -542,7 +542,7 @@
           </div>
           <div class="post-meta">投稿者: ${esc(p.poster)} ・ ${date}${isDone ? ` ・ 受注者: ${esc(p.acceptor||'')}` : ''}</div>
           <div class="post-actions">
-            ${!isOwn && !isDone ? `<button class="btn-accept" onclick="acceptPost('${p.id}')">✅ 受注する（+${p.reward} NKD）</button>` : ''}
+            ${!isOwn && !isDone ? `<button class="btn-accept" onclick="acceptPost('${p.id}')">✅ 受注する（+${p.reward} かむ）</button>` : ''}
             ${isOwn && !isDone ? `<span class="btn-gray-sm" style="text-align:center;">自分の依頼</span>` : ''}
             ${isDone ? `<span class="btn-gray-sm" style="text-align:center;">受注済み</span>` : ''}
           </div>
@@ -554,11 +554,11 @@
   window.acceptPost = async function(postId) {
     const post = allPosts.find(p => p.id === postId);
     if (!post || post.status === 'done') return;
-    if (!confirm(`「${post.name}」を受注しますか？\n報酬: ${post.reward} NKD が受け取れます`)) return;
+    if (!confirm(`「${post.name}」を受注しますか？\n報酬: ${post.reward} かむ が受け取れます`)) return;
 
     try {
       const newBalance = currentUser.balance + post.reward;
-      const newHistory = [...(currentUser.history||[]), `✅ 依頼受注「${post.name}」+${post.reward} NKD`].slice(-10);
+      const newHistory = [...(currentUser.history||[]), `✅ 依頼受注「${post.name}」+${post.reward} かむ`].slice(-10);
       const updates = {};
       updates[`accounts/${currentUserName}/balance`] = newBalance;
       updates[`accounts/${currentUserName}/history`] = newHistory;
@@ -568,7 +568,7 @@
       await update(ref(db), updates);
       currentUser.balance = newBalance; currentUser.history = newHistory;
       updateUI();
-      alert(`受注しました！${post.reward} NKD を受け取りました🎉`);
+      alert(`受注しました！${post.reward} かむ を受け取りました🎉`);
     } catch(e) { alert('受注に失敗しました'); }
   };
 
