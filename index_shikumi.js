@@ -36,40 +36,40 @@ const TEXT = {
   userLabel: "ユーザー",
   noHistory: "履歴はありません",
   noNotices: "お知らせはありません",
-  noticesLoadError: "お知らせの取得に失敗しました",
+  noticesLoadError: "お知らせの取得ができませんでした",
   noRequests: "申請はありません",
-  requestsLoadError: "申請の読み込みに失敗しました",
+  requestsLoadError: "申請の取得ができませんでした",
   enterName: "名前を入力してください",
   invalidName: "その名前は使えません",
   invalidPin: "パスワードは4桁の数字にしてください",
   weakPin: "そのパスワードは使えません",
   pinMismatch: "パスワードが一致しません",
   nameTaken: "その名前はすでに使われています",
-  accountLimit: "アカウント数が上限に達しています",
+  accountLimit: "アカウントの数が上限に達しています",
   accountCreated: "アカウントを作成しました。ログインしてください",
-  accountCreateError: "アカウント作成に失敗しました",
+  accountCreateError: "アカウント作成ができませんでした",
   enterCredentials: "名前とパスワードを入力してください",
   loginFailed: "名前またはパスワードが違います",
-  loginError: "ログインに失敗しました",
-  enterRecipient: "送る相手を入力してください",
+  loginError: "ログインすることができませんでした",
+  enterRecipient: "送る相手の名前を入力してください",
   cannotSendSelf: "自分自身には送れません",
   invalidAmount: "金額を正しく入力してください",
-  maxAmount: "1回に送れるのは10NKDまでです",
-  maxAmountVip: "1回に送れるのは30NKDまでです",
+  maxAmount: "1回に送れるのは10かむまでです",
+  maxAmountVip: "1回に送れるのは30かむまでです",
   insufficientBalance: "残高が足りません",
   recipientNotFound: "送金先が見つかりません",
-  requestSendError: "申請の送信に失敗しました",
+  requestSendError: "申請の送信ができませんでした",
   senderNotFound: "送金元が見つかりません",
   senderLowBalance: "送金元の残高が不足しています",
-  approveError: "承認に失敗しました",
+  approveError: "承認できませんでした",
   rejectDone: "申請を拒否しました",
-  rejectError: "拒否に失敗しました",
-  bonusCooldown: "登校ボーナスは24時間に1回までです",
+  rejectError: "拒否できませんでした",
+  bonusCooldown: "登校ボーナスは1日に1回までです",
   geoUnsupported: "この端末では位置情報が使えません",
   checkingLocation: "位置情報を確認中...",
   locationError: "位置情報の取得に失敗しました",
-  locationBonusHistory: "登校ボーナス +2 NKD",
-  locationBonusReceived: "ボーナスを受け取りました: +2 NKD"
+  locationBonusHistory: "登校ボーナス +2 かむ",
+  locationBonusReceived: "ボーナスを受け取りました: +2 かむ"
 };
 
 function $(id) { return document.getElementById(id); }
@@ -157,7 +157,7 @@ async function loadPendingRequests() {
     if(!snap.exists()){ list.innerHTML=`<p style="color:#aaa;font-size:0.85em;margin:0;">${TEXT.noRequests}</p>`; return; }
     list.innerHTML=Object.entries(snap.val()).map(([id,req])=>`
       <div style="padding:8px 0;border-bottom:1px solid #f0f0f0;">
-        <b>${req.from}</b> さんから <b>${req.amount} NKD</b> の申請
+        <b>${req.from}</b> さんから <b>${req.amount} かむ</b> の申請
         <div style="margin-top:6px;display:flex;gap:6px;">
           <button onclick="approveRequest('${id}','${req.from}',${req.amount})" style="width:auto;padding:5px 12px;font-size:0.85em;display:inline-block;margin:0;flex:1;">承認</button>
           <button onclick="rejectRequest('${id}')" style="width:auto;padding:5px 12px;font-size:0.85em;display:inline-block;margin:0;flex:1;background:linear-gradient(135deg,#e53935,#ef5350);box-shadow:0 3px 8px rgba(229,57,53,0.3);">拒否</button>
@@ -207,7 +207,7 @@ window.createAccount=async function() {
     const ex=await get(ref(db,`accounts/${name}`));
     if(ex.exists()){setMessage("message",TEXT.nameTaken);return;}
     const all=await get(ref(db,"accounts"));
-    if(all.exists()&&Object.keys(all.val()).length>=50){setMessage("message",TEXT.accountLimit);return;}
+    if(all.exists()&&Object.keys(all.val()).length>=100){setMessage("message",TEXT.accountLimit);return;}
     const hashedPass = await hashPassword(pass);
 
     await set(ref(db,`accounts/${name}`),{
@@ -279,9 +279,9 @@ window.approveRequest=async function(requestId,fromName,amount) {
 
     const senderNewBalance = Number(sender.balance) - amt;
     const receiverNewBalance = Number(currentUser.balance||0) + amt;
-    if(receiverNewBalance > 10000){setMessage("bankMessage","残高上限（10000NKD）を超えるため受け取れません");return;}
-    const senderNewHistory=[...(sender.history||[]),`${currentUserName} さんへ ${amt} NKD送金`].slice(-10);
-    const receiverNewHistory=[...(currentUser.history||[]),`${fromName} さんから ${amt} NKD受け取り`].slice(-10);
+    if(receiverNewBalance > 10000){setMessage("bankMessage","残高上限（10000かむ）を超えるため受け取れません");return;}
+    const senderNewHistory=[...(sender.history||[]),`${currentUserName} さんへ ${amt} かむ送金`].slice(-10);
+    const receiverNewHistory=[...(currentUser.history||[]),`${fromName} さんから ${amt} かむ受け取り`].slice(-10);
 
     // アカウント全体を上書きする形で書き込む
     const senderData = {...sender, balance: senderNewBalance, history: senderNewHistory};
@@ -294,7 +294,7 @@ window.approveRequest=async function(requestId,fromName,amount) {
     currentUser.balance=receiverNewBalance;
     currentUser.history=receiverNewHistory;
     updateBankUI(); loadPendingRequests();
-    setMessage("bankMessage",`${fromName} さんから ${amt} NKD受け取りました`,"green");
+    setMessage("bankMessage",`${fromName} さんから ${amt} かむ受け取りました`,"green");
   } catch(e) {setMessage("bankMessage",TEXT.approveError); console.error(e);}
 };
 
@@ -327,7 +327,7 @@ window.getLocationBonus = async function() {
   const lastBonus = currentUser.lastLocationBonus || 0;
 
   if (lastBonus >= start.getTime()) {
-    setMessage("bankMessage", "今日はもう受け取り済みです");
+    setMessage("bankMessage", "今日の登校ボーナスはすでに受け取っています");
     return;
   }
 
@@ -365,7 +365,7 @@ window.getLocationBonus = async function() {
     if (dist <= lim) {
 
       if ((currentUser.balance || 0) + 2 > 10000) {
-        setMessage("bankMessage", "残高上限（10000NKD）に達しています");
+        setMessage("bankMessage", "残高上限（10000かむ）に達しています");
         btn.disabled = false;
         return;
       }
@@ -416,11 +416,11 @@ window.buyVip = async function(days, price, type) {
   msg.style.color = "red";
 
   if ((currentUser.balance || 0) < price) {
-    msg.textContent = `残高が足りません（${price}NKD必要）`;
+    msg.textContent = `残高が足りません（${price}かむ必要）`;
     return;
   }
 
-  if (!confirm(`${price}NKDを支払ってVIPになりますか？`)) return;
+  if (!confirm(`${price}かむを支払ってVIPになりますか？`)) return;
 
   try {
     const now = Date.now();
@@ -439,7 +439,7 @@ window.buyVip = async function(days, price, type) {
     else if (type === "3month") label = "3ヶ月分";
     else if (type === "12month") label = "12ヶ月分";
 
-    const nh = [...(currentUser.history || []), `💎 VIP加入(${label}) -${price} NKD`].slice(-10);
+    const nh = [...(currentUser.history || []), `💎 VIP加入(${label}) -${price} かむ`].slice(-10);
 
     await update(ref(db, `accounts/${currentUserName}`), {
       balance: nb,
@@ -454,10 +454,10 @@ window.buyVip = async function(days, price, type) {
     currentUser.premiumType = type;
 
     updateBankUI();
-    alert("💎 VIP購入完了！");
+    alert("💎VIPを購入しました");
 
   } catch {
-    msg.textContent = "購入に失敗しました";
+    msg.textContent = "購入することができません";
   }
 };
 
