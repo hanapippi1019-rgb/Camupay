@@ -432,7 +432,7 @@ async function executeTrade(company) {
       }
     }
 
-    const fee = Math.floor(total * 0.1);
+    const fee = Math.floor(total * 0.3);
     const received = total - fee;
 
     const userSnap = await dbGet('accounts/' + currentUserName);
