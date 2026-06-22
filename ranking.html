@@ -94,6 +94,12 @@ const firebaseConfig = {
 };
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
+const VIP_TYPES = ["1month", "3month", "12month"];
+function isVip(data) {
+  if (!data) return false;
+  if (data.premiumExpireAt) return data.premiumExpireAt > Date.now();
+  return VIP_TYPES.includes(data.premiumType) || data.isPremium === true || data.vip === true;
+}
 const snap = await get(ref(db,"accounts"));
 const podium = document.getElementById("rankingPodium");
 const list = document.getElementById("rankingList");
@@ -116,16 +122,9 @@ if(!snap.exists()) {
           data.isAdmin === true ||
           data.admin === true;
 
-        const isVip =
-          data.isPremium === true ||
-          data.vip === true ||
-          data.premiumType === "1month" ||
-          data.premiumType === "3month" ||
-          data.premiumType === "12month";
-        
         let badges = [];
         
-        if (isVip) {
+        if (isVip(data)) {
           badges.push('<span class="podium-vip">VIP</span>');
         }
         
@@ -155,16 +154,9 @@ const badge = badges.join(" ");
     data.isAdmin === true ||
     data.admin === true;
 
-    const isVip =
-      data.isPremium === true ||
-      data.vip === true ||
-      data.premiumType === "1month" ||
-      data.premiumType === "3month" ||
-      data.premiumType === "12month";
-
     let badges = [];
 
-    if (isVip) {
+    if (isVip(data)) {
       badges.push('<span class="podium-vip">VIP</span>');
     }
 
