@@ -19,6 +19,14 @@ const auth = getAuth(app);
 await signInAnonymously(auth).catch(()=>{});
 
 const content = document.getElementById("rankingContent");
+const VIP_TYPES = ["1month", "3month", "12month"];
+
+function isVip(data) {
+  if (!data) return false;
+  if (data.premiumExpireAt) return data.premiumExpireAt > Date.now();
+  return VIP_TYPES.includes(data.premiumType) || data.premiumType === "1month" || data.premiumType === "3month" || data.premiumType === "12month"
+}
+
 try {
   const snap = await get(ref(db, "accounts"));
 
@@ -47,7 +55,7 @@ try {
     const cleanName = String(name).trim();
     alert(name);
     const realRank = sorted.indexOf(entry);
-   const vipBadge = data.isPremium ? '<span class="podium-vip">VIP</span>' : "";
+   const vipBadge = isVip(data) ? '<span class="podium-vip">VIP</span>' : "";
 
 console.log("TOP3名:", cleanName);
 
@@ -76,7 +84,7 @@ const adminBadge = isAdmin
 let listHTML = '<div class="rank-list">';
 
 sorted.slice(3).forEach(([name, data], i) => {
-  const vipBadge = data.isPremium
+  const vipBadge = isVip(data)
     ? '<span class="rank-vip">VIP</span>'
     : "";
 
