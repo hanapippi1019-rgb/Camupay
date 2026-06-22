@@ -13,18 +13,9 @@ const firebaseConfig = {
 };
 
 const GAS_URL = "https://script.google.com/macros/s/AKfycbys3jtI5KoMIxZb56RX2a8sxHRIwmRi0JNZRb8ixtIa9oMEhZdGf0--KzfmYN8i7ZgC/exec";
+const VIP_TYPES = ["1month", "3month", "12month"];
 const NG_WORDS = [
-  "しね","死ね","殺す","ころす","ばか","あほ","くそ","ちくしょう",
-  "ファック","ふぁっく","ファッキン","ふぁっきん",
-  "まんこ","ちんこ","おまんこ","ちんぽ","うんこ",
-  "ポルノ","ぽるの","アダルト","あだると","エロ","えろ","猥褻","わいせつ",
-  "児童ポルノ","じどうぽるの","児ポ","じぽ","チャイルドポルノ","ちゃいるどぽるの",
-  "未成年ポルノ","みせいねんぽるの","ロリコン","ろりこん","ショタコン","しょたこん",
-  "盗撮","とうさつ","無修正","むしゅうせい","リベンジポルノ","りべんじぽるの",
-  "レイプ","れいぷ","強姦","ごうかん","獣姦","じゅうかん","近親相姦","きんしんそうかん",
-  "porn","porno","pornography","adult","erotic","obscene","childporn","childporno",
-  "childpornography","csam","csem","childabusematerial","revengeporn","voyeur","upskirt",
-  "rape","bestiality","incest","lolicon","shotacon","uncensored"
+  "しね","死ね","殺す","ころす","ばか","あほ","くそ","ちくしょう","死ねカス","ゴミ","クズ","自殺","死にたい","しねかす","シネカス","4ねカス","🍌💦","ふぁっく","ファッキン","ふぁっきん","まんこ","ちんこ","おまんこ","ちんぽ","うんこ","ポルノ","ぽるの","アダルト","あだると","エロ","えろ","猥褻","わいせつ","児童ポルノ","じどうぽるの","児ポ","じぽ","チャイルドポルノ","ちゃいるどぽるの","未成年ポルノ","みせいねんぽるの","ロリコン","ろりこん","ショタコン","しょたこん","盗撮","とうさつ","無修正","むしゅうせい","リベンジポルノ","りべんじぽるの","レイプ","れいぷ","強姦","ごうかん","獣姦","じゅうかん","近親相姦","きんしんそうかん","porn","porno","pornography","adult","erotic","obscene","childporn","childporno","childpornography","csam","csem","childabusematerial","revengeporn","voyeur","upskirt","rape","bestiality","incest","lolicon","shotacon","uncensored"
 ];
 
 const app = initializeApp(firebaseConfig);
@@ -115,14 +106,15 @@ function showScreen(screen) {
 function updatePremiumUI() {
   if (!currentUser) return;
 
-  const vip = currentUser.premiumExpireAt && currentUser.premiumExpireAt > Date.now();
+  const vip = isVip(currentUser);
 
   if (vip) {
     $("vipCard").style.display = "block";
     $("premiumCta").style.display = "none";
 
-    const date = new Date(currentUser.premiumExpireAt).toLocaleDateString("ja-JP");
-    $("vipSince").textContent = `VIP有効期限: ${date}`;
+    $("vipSince").textContent = currentUser.premiumExpireAt
+      ? `VIP有効期限: ${new Date(currentUser.premiumExpireAt).toLocaleDateString("ja-JP")}`
+      : `VIPプラン: ${currentUser.premiumType || "有効"}`;
 
     $("sendAmount").placeholder = "送る金額（最大30）";
   } else {
@@ -133,7 +125,9 @@ function updatePremiumUI() {
 }
 
 function isVip(user) {
-  return user.premiumExpireAt && user.premiumExpireAt > Date.now();
+  if (!user) return false;
+  if (user.premiumExpireAt) return user.premiumExpireAt > Date.now();
+  return VIP_TYPES.includes(user.premiumType) || user.isPremium === true || user.vip === true;
 }
 
 function updateBankUI() {
