@@ -406,7 +406,7 @@ async function executeTrade(company) {
     await dbSetOptional('holdingTime/' + currentUserName + '/' + tradeCompanyId, Date.now());
 
     const newInv = inventory - amount;
-    const newPrice = Math.max(rawPrice, 1) + amount * 0.01;
+    const newPrice = Math.max(1, rawPrice - amount * 0.01);
     const hist = company.stock?.priceHistory || [];
     hist.push(price); if (hist.length > 20) hist.shift();
     await dbSet('companies/' + tradeCompanyId + '/stock/inventory', newInv);
@@ -450,7 +450,7 @@ async function executeTrade(company) {
     const invSnap = await dbGet('companies/' + tradeCompanyId + '/stock/inventory');
     const inventory = Number(invSnap.val() || 0);
     const newInv = Math.min(inventory + amount, Number(company.stock?.totalShares || 1000));
-    const newPrice = Math.max(0.01, rawPrice - amount * 0.05);
+    const newPrice = Math.max(rawPrice + amount * 0.05, 1);
     const hist = company.stock?.priceHistory || [];
     hist.push(price); if (hist.length > 20) hist.shift();
     await dbSet('companies/' + tradeCompanyId + '/stock/inventory', newInv);
