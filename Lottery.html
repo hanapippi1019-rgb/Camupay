@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>かむ Pay - 宝くじ</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#4caf50">
+<link rel="stylesheet" href="style.css">
+<style>
+  .lottery-header-card {
+    background: linear-gradient(135deg, #b8952a, #ffd700, #b8952a);
+    border-radius: 16px; padding: 22px; margin-bottom: 14px;
+    color: #1a2a3a; text-align: center; position: relative; overflow: hidden;
+    box-shadow: 0 6px 20px rgba(212,175,55,0.4);
+  }
+  .lottery-header-card .ticket-icon { font-size: 2.4em; margin-bottom: 6px; }
+  .lottery-header-card .ticket-price { font-size: 1.3em; font-weight: bold; }
+  .lottery-header-card .ticket-sub { font-size: 0.82em; opacity: 0.8; margin-top: 4px; }
+
+  .draw-btn {
+    width: 80%; padding: 16px;
+    background: linear-gradient(135deg, #b8952a, #ffd700, #b8952a);
+    color: #1a2a3a; font-weight: bold; font-size: 1.1em;
+    border: none; border-radius: 10px; margin: 14px auto;
+    box-shadow: 0 4px 14px rgba(212,175,55,0.5);
+    cursor: pointer; display: block;
+    transition: transform 0.1s;
+  }
+  .draw-btn:hover { transform: translateY(-1px) scale(1.02); }
+  .draw-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  /* くじ結果モーダル */
+  .result-modal-bg {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7); z-index: 300;
+    align-items: center; justify-content: center;
+  }
+  .result-modal-bg.open { display: flex; }
+  .result-box {
+    background: white; border-radius: 20px;
+    padding: 32px 24px; width: 300px; max-width: 90%;
+    text-align: center; box-shadow: 0 16px 40px rgba(0,0,0,0.35);
+    animation: popIn 0.35s ease;
+  }
+  @keyframes popIn {
+    0% { transform: scale(0.7); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .result-rank {
+    font-size: 1.6em; font-weight: bold; margin-bottom: 8px;
+  }
+  .result-rank.rank-1 { color: #d4af37; }
+  .result-rank.rank-2 { color: #b8952a; }
+  .result-rank.rank-3,
+  .result-rank.rank-4 { color: #4caf50; }
+  .result-rank.rank-5,
+  .result-rank.rank-6 { color: #1e88e5; }
+  .result-rank.rank-7 { color: #888; }
+  .result-rank.rank-lose { color: #999; }
+  .result-amount {
+    font-size: 2.2em; font-weight: bold; color: #333; margin: 8px 0 4px;
+  }
+  .result-sub { color: #888; font-size: 0.85em; margin-bottom: 18px; }
+  .bulk-result-list {
+    max-height: 240px; overflow-y: auto; margin: 12px 0;
+    text-align: left; border-top: 1px solid #eee; padding-top: 8px;
+  }
+  .bulk-result-row {
+    display: flex; justify-content: space-between;
+    padding: 6px 0; font-size: 0.88em; border-bottom: 1px solid #f5f5f5;
+  }
+  .bulk-result-row.win { color: #2e7d32; font-weight: bold; }
+  .bulk-total {
+    font-size: 1.3em; font-weight: bold; margin: 10px 0 4px;
+  }
+  .result-close-btn {
+    width: 100%; padding: 11px; border: none; border-radius: 8px;
+    background: linear-gradient(135deg, #43a047, #66bb6a); color: white;
+    font-weight: bold; cursor: pointer; font-family: 'Noto Sans JP', sans-serif;
+  }
+
+  /* 確率表 */
+  .table-card { background: white; border-radius: 14px; padding: 18px 20px; margin-bottom: 14px; box-shadow: 0 3px 12px rgba(0,0,0,0.07); }
+  .table-card h3 { margin: 0 0 12px; font-size: 1em; color: #333; }
+  .odds-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 9px 0; border-bottom: 1px solid #f5f5f5; font-size: 0.88em;
+  }
+  .odds-row:last-child { border-bottom: none; }
+  .odds-rank { font-weight: bold; color: #333; min-width: 50px; }
+  .odds-amount { color: #4caf50; font-weight: bold; }
+  .odds-prob { color: #999; font-size: 0.9em; }
+
+  /* 履歴 */
+  .lottery-history-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 0; border-bottom: 1px solid #f5f5f5; font-size: 0.85em; color: #555;
+  }
+  .lottery-history-item:last-child { border-bottom: none; }
+</style>
+</head>
+<body>
+
+<div id="restoreLoading">
+  <div class="spinner"></div>
+  <span class="spinner-text">読み込み中...</span>
+</div>
+
+<header>
+  <button class="menu-btn" onclick="toggleDrawer()">☰</button>
+  🎟️ 宝くじ
+</header>
+<div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-title">🎟️ 宝くじ</div>
+  <div class="drawer-user" style="padding:12px 16px; border-bottom:1px solid #eee;">
+    <div style="font-weight:bold;" id="userName">-</div>
+    <div style="font-size:0.9em;color:#666;">所持金: <span id="userBalance">-</span> かむ</div>
+  </div>
+  <a class="drawer-item" href="index.html">🏠 ホーム</a>
+  <a class="drawer-item" href="ranking.html">🏆 ランキング</a>
+  <a class="drawer-item" href="kabuka.html">📈 株式市場</a>
+  <a class="drawer-item" href="hoshiriwa.html">📦 ホシリワ</a>
+  <a class="drawer-item" href="https://docs.google.com/forms/d/e/1FAIpQLSdVE-ilXHqckrGAoMzBe3nqM5sUQzeh6QXSFtxdXZE1X7dWQA/viewform" target="_blank" rel="noopener noreferrer">🚨 通報フォーム</a>
+</div>
+
+<div class="container" id="mainContent" style="display:none;">
+
+  <div class="lottery-header-card">
+    <div class="ticket-icon">🎟️</div>
+    <div class="ticket-price">1枚 2 かむ</div>
+    <div class="ticket-sub">引いたその場で結果がわかります</div>
+  </div>
+
+  <div class="table-card" style="margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center;">
+    <div style="font-size: 0.95em; color: #555;">現在の所持金</div>
+    <div id="userBalanceMain" style="font-size: 1.4em; font-weight: bold; color: #4caf50;">0 かむ</div>
+  </div>
+
+  <button class="draw-btn" id="drawBtn" onclick="drawLottery()">🎰 くじを引く（2かむ）</button>
+
+  <div class="table-card" style="margin-top:10px;">
+    <h3>🎫 まとめて引く</h3>
+    <input type="number" id="bulkCount" placeholder="どれくらい買う？（枚数）" min="1">
+    <button onclick="drawLotteryBulk()">購入する</button>
+  </div>
+
+  <p id="drawMsg" style="text-align:center;font-size:0.85em;min-height:18px;color:red;"></p>
+
+  <div class="table-card">
+    <h3>🏆 当選確率表</h3>
+    <div class="odds-row"><span class="odds-rank">1等</span><span class="odds-amount">3,000かむ</span><span class="odds-prob">0.0005%</span></div>
+    <div class="odds-row"><span class="odds-rank">2等</span><span class="odds-amount">800 かむ</span><span class="odds-prob">0.005%</span></div>
+    <div class="odds-row"><span class="odds-rank">3等</span><span class="odds-amount">150 かむ</span><span class="odds-prob">0.05%</span></div>
+    <div class="odds-row"><span class="odds-rank">4等</span><span class="odds-amount">70 かむ</span><span class="odds-prob">0.5%</span></div>
+    <div class="odds-row"><span class="odds-rank">5等</span><span class="odds-amount">15 かむ</span><span class="odds-prob">2.0%</span></div>
+    <div class="odds-row"><span class="odds-rank">6等</span><span class="odds-amount">5 かむ</span><span class="odds-prob">7.5%</span></div>
+    <div class="odds-row"><span class="odds-rank">7等</span><span class="odds-amount">2 かむ</span><span class="odds-prob">25.0%</span></div>
+  </div>
+
+  <div class="table-card">
+    <h3>📋 自分のくじ履歴</h3>
+    <div id="lotteryHistory"><p class="empty-state">読み込み中...</p></div>
+  </div>
+
+  <a href="index.html" style="display:block;text-align:center;margin-top:8px;color:#4caf50;font-weight:bold;text-decoration:none;">← ホームに戻る</a>
+
+</div>
+
+<div class="container" id="notLoggedIn" style="display:none;text-align:center;">
+  <p style="color:#aaa;">ログインしてください</p>
+  <a href="index.html" style="color:#4caf50;font-weight:bold;">← ホームに戻る</a>
+</div>
+
+<!-- 結果モーダル -->
+<div class="result-modal-bg" id="resultModal">
+  <div class="result-box">
+    <div class="result-rank" id="resultRank">-</div>
+    <div class="result-amount" id="resultAmount">-</div>
+    <div class="result-sub" id="resultSub">-</div>
+    <button class="result-close-btn" onclick="closeResultModal()">閉じる</button>
+  </div>
+</div>
+
+<script type="module" src="lottery_shikumi.js"></script>
+</body>
+</html>
