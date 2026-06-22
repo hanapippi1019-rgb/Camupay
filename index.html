@@ -25,7 +25,6 @@
 <div class="drawer" id="drawer">
   <div class="drawer-title">かむPay</div>
   <a class="drawer-item" href="ranking.html">🏆 ランキング</a>
-  <a class="drawer-item" href="hoshiriwa.html">📦 ホシリワ</a>
   <a class="drawer-item" href="https://docs.google.com/forms/d/e/1FAIpQLSdVE-ilXHqckrGAoMzBe3nqM5sUQzeh6QXSFtxdXZE1X7dWQA/viewform" target="_blank" rel="noopener noreferrer">🚨 通報フォーム</a>
 </div>
 
@@ -76,8 +75,9 @@
     <div class="vip-sub">プレミアム会員になると<br>特典が解放されます</div>
     <div class="vip-explanation">
     送金上限が 10 → 30 かむ にアップ<br>
-    ランキングにVIPバッジが表示,<br>
-    自分で企業が作れるようになる(現在開発中なため利用はできません)
+    ランキングにVIPバッジが表示<br>
+    ホシリワで画像と文章を一緒に送れる<br>
+    自分で企業が作れるようになる
   </div>
     <button class="btn-gold" onclick="subscribePremium()">💎 1ヶ月(30日間)VIP - 15かむ</button>
     <button class="btn-gold" onclick="subscribePremium3Month()">💎 3ヶ月(90日間)VIP - 50かむ</button>
@@ -109,11 +109,13 @@
     <div id="pendingList"><p style="color:#aaa;font-size:0.85em;margin:0;">申請はありません</p></div>
   </div>
   <div class="action-card">
-    <h3>📋 取引履歴</h3>
+    <h3>📋 履歴</h3>
     <div id="history"></div>
   </div>
   <button class="btn-gold" onclick="location.href='ranking.html'">🏆 ランキングを見る</button>
+  <button class="btn-green" onclick="location.href='kabuka.html'">📈 株式市場</button>
   <button class="btn-gray" onclick="location.href='hoshiriwa.html'">📦 ホシリワ</button>
+  <button class="btn-gray" onclick="location.href='Lottery.html'">🎟️ 宝くじ</button>
   <button class="btn-danger" onclick="window.open('https://docs.google.com/forms/d/e/1FAIpQLSdVE-ilXHqckrGAoMzBe3nqM5sUQzeh6QXSFtxdXZE1X7dWQA/viewform','_blank')">🚨 通報フォーム</button>
   <p id="bankMessage" style="color:red; font-size:0.9em; margin:6px 0;"></p>
 </div>
