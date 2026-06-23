@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>かむPay</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#4caf50">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="かむPay">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="restoreLoading">
+  <div class="spinner"></div>
+  <span class="spinner-text">読み込み中...</span>
+</div>
+<header>
+  <button class="menu-btn" onclick="toggleDrawer()">☰</button>
+  かむPay
+</header>
+<div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-title">かむPay</div>
+  <a class="drawer-item" href="kabuka.html">📈 株式市場</a>
+  <a class="drawer-item" href="ranking.html">🏆 ランキング</a>
+  <a class="drawer-item" href="hoshiriwa.html">📦 ホシリワ</a>
+  <a class="drawer-item" href="Lottery.html">🎟️ 宝くじ</a>
+  <div style="border-top: 1px solid #eee; margin: 8px 0;"></div>
+  <a class="drawer-item" href="https://docs.google.com/forms/d/e/1FAIpQLSdVE-ilXHqckrGAoMzBe3nqM5sUQzeh6QXSFtxdXZE1X7dWQA/viewform" target="_blank" rel="noopener noreferrer">🚨 通報フォーム</a>
+</div>
+
+<!-- ログイン画面 -->
+<div class="container" id="loginScreen" style="display:none;">
+  <div class="auth-tabs">
+    <div class="auth-tab-indicator" id="tabIndicator"></div>
+    <button class="auth-tab-btn active" id="tabLoginBtn" onclick="switchAuthTab('login')">ログイン</button>
+    <button class="auth-tab-btn" id="tabRegisterBtn" onclick="switchAuthTab('register')">アカウント作成</button>
+  </div>
+  <div class="auth-forms-wrapper" id="authFormsWrapper">
+    <div class="auth-form-panel" id="loginPanel">
+      <input type="text" id="loginName" placeholder="名前">
+      <input type="password" id="loginPass" placeholder="4桁のパスワード">
+      <br>
+      <button onclick="login()">ログイン</button>
+    </div>
+    <div class="auth-form-panel hidden-panel" id="registerPanel">
+      <input type="text" id="regName" placeholder="名前">
+      <input type="password" id="regPass" placeholder="4桁のパスワード">
+      <input type="password" id="regPassConfirm" placeholder="パスワード確認">
+      <br>
+      <button onclick="createAccount()">アカウントを作成</button>
+    </div>
+  </div>
+  <p id="loading" style="display:none;">処理中...</p>
+  <p id="message" style="color:red; margin:4px 0; font-size:0.9em;"></p>
+</div>
+
+<!-- ホーム画面 -->
+<div class="container" id="bankScreen" style="display:none;">
+
+  <!-- VIPカード -->
+  <div class="vip-card" id="vipCard" style="display:none;">
+    <div class="vip-badge">VIP</div>
+    <div class="vip-sub">Premium Member</div>
+    <div class="vip-explanation">
+      ✦ 送金上限 30かむ<br>
+      ✦ ランキングにVIPバッジ表示<br>
+      ✦ 自分で企業を作れる
+    </div>
+    <div class="vip-note" id="vipTrialNote" style="display:none; color:#444; font-size:0.9em; margin-top:8px;">
+      ※無料VIPトライアル中は企業を作成できません
+    </div>
+    <div class="vip-since" id="vipSince"></div>
+  </div>
+
+  <!-- サブスクCTA -->
+  <div class="vip-card" id="premiumCta" style="display:none;">
+    <div class="vip-badge">VIP</div>
+    <div class="vip-sub">プレミアム会員になると<br>特典が解放されます</div>
+    <div class="vip-explanation">
+    送金上限が 10 → 30 かむ にアップ<br>
+    ランキングにVIPバッジが表示<br>
+    ホシリワで画像と文章を一緒に送れる<br>
+    自分で企業が作れるようになる
+  </div>
+    <button class="btn-gold" onclick="startTrialVip()">💠 1週間無料VIPトライアル</button>
+    <button class="btn-gold" onclick="subscribePremium()">💎 1ヶ月(30日間)VIP - 15かむ</button>
+    <button class="btn-gold" onclick="subscribePremium3Month()">💎 3ヶ月(90日間)VIP - 50かむ</button>
+    <button class="btn-gold" onclick="subscribePremium12Month()">💎 12ヶ月(365日間)VIP - 135かむ</button>
+    <p id="trialMsg" style="font-size:0.85em;margin-top:8px;min-height:18px;color:#666;"></p>
+    <p id="premiumMsg" style="font-size:0.85em;margin-top:8px;min-height:18px;color:red;"></p>
+  </div>
+
+  <div class="notice-card">
+    <h3>📢 お知らせ</h3>
+    <div id="noticeList"><p class="notice-empty">読み込み中...</p></div>
+  </div>
+  <div class="balance-card">
+    <div class="user-name" id="userName">ユーザー</div>
+    <div class="balance-label">残高</div>
+    <div>
+      <span class="balance-amount" id="balance">0</span>
+      <span class="balance-unit"> かむ</span>
+    </div>
+  </div>
+  <button class="bonus-btn" onclick="getLocationBonus()">登校ボーナスを受け取る</button>
+  <div class="action-card">
+    <h3>📨 送金申請</h3>
+    <input type="text" id="sendTo" placeholder="送る相手の名前">
+    <input type="number" id="sendAmount" placeholder="送る金額（最大10）">
+    <button onclick="sendMoney()">申請を送る</button>
+  </div>
+  <div class="action-card">
+    <h3>📬 受信した申請</h3>
+    <div id="pendingList"><p style="color:#aaa;font-size:0.85em;margin:0;">申請はありません</p></div>
+  </div>
+  <div class="action-card">
+    <h3>📋 履歴</h3>
+    <div id="history"></div>
+  </div>
+  <button class="btn-gold" onclick="location.href='ranking.html'">🏆 ランキングを見る</button>
+  <button class="btn-green" onclick="location.href='kabuka.html'">📈 株式市場</button>
+  <button class="btn-gray" onclick="location.href='hoshiriwa.html'">📦 ホシリワ</button>
+  <button class="btn-gray" onclick="location.href='Lottery.html'">🎟️ 宝くじ</button>
+  <button class="btn-danger" onclick="window.open('https://docs.google.com/forms/d/e/1FAIpQLSdVE-ilXHqckrGAoMzBe3nqM5sUQzeh6QXSFtxdXZE1X7dWQA/viewform','_blank')">🚨 通報フォーム</button>
+  <p id="bankMessage" style="color:red; font-size:0.9em; margin:6px 0;"></p>
+</div>
+
+<script type="module" src="index_shikumi.js"></script>
+</body>
+</html>

@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>かむ 株式市場</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  /* ===== 株式市場専用スタイル ===== */
+  .stock-header-card {
+    background: linear-gradient(135deg, #1a237e, #283593);
+    border-radius: 16px; padding: 20px; margin-bottom: 14px;
+    color: white; position: relative; overflow: hidden;
+    box-shadow: 0 6px 20px rgba(26,35,126,0.4);
+  }
+  .stock-header-card::before {
+    content: '📈'; position: absolute;
+    right: 16px; top: 16px; font-size: 2.5em; opacity: 0.2;
+  }
+  .stock-company-name { font-size: 0.85em; opacity: 0.75; margin-bottom: 4px; }
+  .stock-price-big { font-size: 2.2em; font-weight: bold; }
+  .stock-price-unit { font-size: 0.9em; opacity: 0.8; }
+  .stock-meta { font-size: 0.8em; opacity: 0.7; margin-top: 6px; }
+
+  /* グラフ */
+  .chart-wrap {
+    margin-top: 14px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 10px; padding: 10px 8px 6px;
+  }
+  .chart-inner {
+    position: relative; height: 56px;
+  }
+  .chart-inner svg {
+    width: 100%; height: 100%;
+  }
+  .big-line-chart polyline {
+    fill: none;
+    stroke-width: 5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .big-line-chart.up polyline { stroke: rgba(105,240,174,0.9); }
+  .big-line-chart.down polyline { stroke: rgba(255,82,82,0.9); }
+  .big-line-chart.same polyline { stroke: rgba(255,255,255,0.6); }
+  .chart-labels {
+    display: flex; justify-content: space-between;
+    font-size: 0.65em; color: rgba(255,255,255,0.4);
+    margin-top: 4px; padding: 0 2px;
+  }
+
+  /* 企業カード */
+  .company-card {
+    background: white; border-radius: 14px;
+    padding: 16px; margin-bottom: 10px;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.07);
+  }
+  .company-card-top {
+    display: flex; align-items: flex-start;
+    justify-content: space-between; margin-bottom: 10px;
+  }
+  .company-card-name { font-weight: bold; font-size: 1em; color: #222; margin-bottom: 3px; }
+  .company-card-owner { font-size: 0.78em; color: #888; }
+  .company-card-price {
+    font-size: 1.2em; font-weight: bold; color: #1e88e5;
+    text-align: right; white-space: nowrap;
+  }
+  .company-card-price span { font-size: 0.65em; color: #888; }
+  .company-card-stats {
+    display: flex; gap: 8px; margin-bottom: 10px;
+  }
+  .cstat {
+    flex: 1; background: #f4f7f5; border-radius: 8px;
+    padding: 7px 6px; text-align: center;
+  }
+  .cstat-label { font-size: 0.7em; color: #888; display: block; margin-bottom: 2px; }
+  .cstat-val { font-size: 0.9em; font-weight: bold; color: #333; }
+  .company-card-actions { display: flex; gap: 8px; }
+
+  /* ミニグラフ（企業カード内） */
+  .mini-chart {
+    position: relative; height: 32px; margin-bottom: 8px;
+  }
+  .mini-chart svg {
+    width: 100%; height: 100%;
+  }
+  .mini-line-chart polyline {
+    fill: none;
+    stroke-width: 4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .mini-line-chart.up polyline { stroke: #69f0ae; }
+  .mini-line-chart.down polyline { stroke: #ff5252; }
+  .mini-line-chart.same polyline { stroke: #ccc; }
+  .mini-line-chart.up circle { fill: #69f0ae; }
+  .mini-line-chart.down circle { fill: #ff5252; }
+  .mini-line-chart.same circle { fill: #ccc; }
+  .mini-line-chart circle {
+    opacity: 0.9;
+  }
+
+  /* 自社カード */
+  .my-company-header {
+    background: linear-gradient(135deg, #1a237e, #283593);
+    border-radius: 16px; padding: 20px; margin-bottom: 14px;
+    color: white; box-shadow: 0 6px 20px rgba(26,35,126,0.4);
+  }
+  .my-company-title { font-size: 0.8em; opacity: 0.7; margin-bottom: 4px; }
+  .my-company-name { font-size: 1.6em; font-weight: bold; margin-bottom: 10px; }
+  .my-company-stats { display: flex; gap: 8px; }
+  .my-stat {
+    flex: 1; background: rgba(255,255,255,0.1);
+    border-radius: 8px; padding: 8px 6px; text-align: center;
+  }
+  .my-stat-label { font-size: 0.7em; opacity: 0.7; display: block; margin-bottom: 3px; }
+  .my-stat-val { font-size: 1em; font-weight: bold; }
+
+  /* メンバーバッジ */
+  .member-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 0; border-bottom: 1px solid #f5f5f5; font-size: 0.9em;
+  }
+  .member-row:last-child { border-bottom: none; }
+  .badge-owner { background: #fff8e1; color: #f57f17; font-size: 0.72em; padding: 2px 7px; border-radius: 4px; font-weight: bold; }
+  .badge-member { background: #e8f5e9; color: #2e7d32; font-size: 0.72em; padding: 2px 7px; border-radius: 4px; font-weight: bold; }
+
+  /* 保有株 */
+  .holding-row {
+    display: flex; align-items: center; padding: 10px 0;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .holding-row:last-child { border-bottom: none; }
+  .holding-info { flex: 1; }
+  .holding-name { font-weight: bold; font-size: 0.92em; color: #333; }
+  .holding-detail { font-size: 0.78em; color: #888; margin-top: 2px; }
+  .holding-val { font-weight: bold; color: #4caf50; font-size: 0.92em; }
+
+  /* モーダル */
+  .modal-bg {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.55); z-index: 300;
+    align-items: center; justify-content: center;
+  }
+  .modal-bg.open { display: flex; }
+  .modal-box {
+    background: white; border-radius: 16px;
+    padding: 24px; width: 320px; max-width: 92%;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.25);
+  }
+  .modal-box h3 { margin: 0 0 6px; color: #333; font-size: 1.05em; }
+  .modal-price-info { font-size: 0.88em; color: #666; margin-bottom: 14px; }
+  .modal-cost { font-size: 0.85em; color: #888; margin: 6px 0 12px; min-height: 20px; }
+  .modal-actions { display: flex; gap: 8px; margin-top: 4px; }
+
+  /* カード汎用 */
+  .card {
+    background: white; border-radius: 14px;
+    padding: 18px 20px; margin-bottom: 14px;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.07); text-align: left;
+  }
+  .card h3 { margin: 0 0 12px; font-size: 1em; color: #333; }
+  .card input { width: 100%; margin: 5px 0; text-align: left; box-sizing: border-box; }
+  .card button { width: 100%; margin: 8px 0 0; }
+  .card p.sub { font-size: 0.82em; color: #888; margin: 0 0 10px; }
+
+  .btn-blue { background: linear-gradient(135deg, #1e88e5, #42a5f5) !important; box-shadow: 0 2px 6px rgba(30,136,229,0.3) !important; }
+  .btn-red-s { background: linear-gradient(135deg, #e53935, #ef5350) !important; box-shadow: 0 2px 6px rgba(229,57,53,0.3) !important; }
+  .btn-sm { padding: 8px 14px !important; font-size: 0.88em !important; width: auto !important; margin: 0 !important; min-height: unset !important; }
+
+  .tab-bar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+  .tab-btn {
+    flex: 1;
+    min-width: 0;
+    border: 1px solid #dfe7ec;
+    border-radius: 12px;
+    padding: 12px 0;
+    color: #333;
+    background: #fdfefe;
+    cursor: pointer;
+    transition: color .25s ease, border-color .25s ease, transform .2s ease, background .35s ease;
+  }
+  .tab-btn:hover {
+    border-color: #b7d7ed;
+    transform: translateY(-1px);
+  }
+  .tab-btn.active {
+    color: #fff;
+    border-color: transparent;
+    background: linear-gradient(135deg, #1e88e5, #42a5f5);
+    box-shadow: 0 6px 18px rgba(30,136,229,0.18);
+  }
+
+  .info-row { display: flex; justify-content: space-between; font-size: 0.85em; padding: 5px 0; border-bottom: 1px solid #f5f5f5; color: #555; }
+  .info-row:last-child { border-bottom: none; }
+  .info-row strong { color: #333; }
+
+  #mainContent { padding: 0 0 20px; }
+</style>
+</head>
+<body>
+
+<div id="restoreLoading">
+  <div class="spinner"></div>
+  <span class="spinner-text">読み込み中...</span>
+</div>
+
+<header>
+  <button class="menu-btn" onclick="toggleDrawer()">☰</button>
+  📈 株式市場
+</header>
+<div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-title">📈 株式市場</div>
+  <div class="drawer-user" style="padding:12px 16px; border-bottom:1px solid #eee;">
+    <div style="font-weight:bold;" id="userName">-</div>
+    <div style="font-size:0.9em;color:#666;">所持金: <span id="userBalance">-</span> かむ</div>
+  </div>
+  <a class="drawer-item" href="index.html">🏦 かむ Payに戻る</a>
+  <a class="drawer-item" href="ranking.html">🏆 ランキング</a>
+  <a class="drawer-item" href="hoshiriwa.html">📦 ホシリワ</a>
+  <a class="drawer-item" href="Lottery.html">🎟️ 宝くじ</a>
+  <div style="border-top: 1px solid #eee; margin: 8px 0;"></div>
+  <a class="drawer-item" href="https://forms.gle/3knWjZZchVdiuYZH6" target="_blank" rel="noopener noreferrer">🚨 通報フォーム</a>
+</div>
+
+<div id="mainContent" class="container" style="display:none;">
+
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="showTab('market')">📊 市場</button>
+    <button class="tab-btn" onclick="showTab('mycompany')">🏢 自社</button>
+    <button class="tab-btn" onclick="showTab('holdings')">💼 保有株</button>
+  </div>
+
+  <!-- ===== 市場 ===== -->
+  <div id="tab-market">
+    <div id="companyList"><p class="empty-state">読み込み中...</p></div>
+  </div>
+
+  <!-- ===== 自社 ===== -->
+  <div id="tab-mycompany" style="display:none;">
+    <div id="companyCreate" class="card" style="display:none;">
+      <h3>🏢 企業を作る</h3>
+      <p class="sub">VIP会員のみ企業を作成できます</p>
+      <input type="text" id="companyName" placeholder="企業名">
+      <input type="number" id="initialPrice" placeholder="初期株価（1〜10 かむ）" min="1" max="10">
+      <input type="number" id="initialShares" placeholder="発行株数（最大1000株）" min="1" max="1000">
+      <button onclick="createCompany()">企業を作成する</button>
+      <p id="companyCreateNote" style="font-size:0.85em;margin-top:8px;min-height:18px;color:#666;"></p>
+      <p id="companyMsg" style="font-size:0.85em;margin-top:8px;min-height:18px;color:red;"></p>
+    </div>
+
+    <div id="ownedCompaniesArea" class="card" style="display:none;">
+      <h3>🏢 所有企業</h3>
+      <div id="ownedCompaniesList" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+    </div>
+
+    <div id="hasCompany" style="display:none;">
+      <div class="my-company-header" id="myCompanyHeader">
+        <div class="my-company-title">MY COMPANY</div>
+        <div class="my-company-name" id="myCompanyName">-</div>
+        <div class="my-company-stats">
+          <div class="my-stat"><span class="my-stat-label">株価</span><span class="my-stat-val" id="myStockPrice">-</span> かむ</div>
+          <div class="my-stat"><span class="my-stat-label">在庫</span><span class="my-stat-val" id="myStockInventory">-</span> 株</div>
+          <div class="my-stat"><span class="my-stat-label">積立</span><span class="my-stat-val" id="myTreasury">-</span> かむ</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>📋 株の管理</h3>
+        <div id="stockInfoRows"></div>
+        <div style="margin-top:12px;">
+          <input type="number" id="newShares" placeholder="追加発行株数（合計1000株まで）" min="1">
+          <button onclick="issueShares()">追加発行する</button>
+          <p id="sharesMsg" style="font-size:0.85em;margin-top:6px;min-height:18px;color:red;"></p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>👥 メンバー（<span id="memberCount">0</span>/5）</h3>
+        <div id="memberList"></div>
+        <div id="addMemberArea" style="margin-top:12px;">
+          <input type="text" id="newMemberName" placeholder="追加するアカウント名">
+          <button class="btn-blue" onclick="addMember()">メンバーを追加</button>
+        </div>
+        <p id="memberMsg" style="font-size:0.85em;margin-top:6px;min-height:18px;color:red;"></p>
+      </div>
+
+      <div class="card">
+        <h3>💰 積立給料</h3>
+        <p style="margin:0 0 4px;font-size:0.9em;">現在の積立: <strong id="myTreasury2">0</strong> かむ</p>
+        <p style="margin:0;font-size:0.78em;color:#aaa;">売買手数料の10%が積立に入ります。毎月1日に自動支払い。</p>
+      </div>
+
+      <button class="btn-red-s" onclick="dissolveCompany()">企業を解散する</button>
+      <p id="myCompanyMsg" style="font-size:0.85em;margin-top:8px;color:red;"></p>
+    </div>
+  </div>
+
+  <!-- ===== 保有株 ===== -->
+  <div id="tab-holdings" style="display:none;">
+    <div class="card">
+      <h3>💼 保有している株</h3>
+      <div id="holdingsList"><p class="empty-state">読み込み中...</p></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="container" id="notLoggedIn" style="display:none;text-align:center;">
+  <p style="color:#aaa;">ログインしてください</p>
+  <a href="index.html" style="color:#4caf50;font-weight:bold;">← </a>
+</div>
+
+<!-- 売買モーダル -->
+<div class="modal-bg" id="tradeModal">
+  <div class="modal-box">
+    <h3 id="tradeTitle"></h3>
+    <div class="modal-price-info" id="tradeInfo"></div>
+    <input type="number" id="tradeAmount" placeholder="株数" min="1" style="width:100%;box-sizing:border-box;margin:0 0 4px;">
+    <div class="modal-cost" id="tradeCost"></div>
+    <div class="modal-actions">
+      <button onclick="closeModal()" style="flex:1;background:linear-gradient(135deg,#78909c,#90a4ae);">キャンセル</button>
+      <button id="tradeConfirmBtn" style="flex:1;"></button>
+    </div>
+    <p id="tradeMsg" style="font-size:0.85em;margin-top:8px;min-height:18px;color:red;"></p>
+  </div>
+</div>
+
+<script type="module" src="kabuka_shikumi.js"></script>
+</body>
+</html>
